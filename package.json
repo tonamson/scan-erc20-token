@@ -6,6 +6,10 @@
   "type": "module",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tonamson4/scan-erc20-token.git"
+  },
   "exports": {
     ".": {
       "types": "./src/index.d.ts",
