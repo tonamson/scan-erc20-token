@@ -25,7 +25,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-13)
 Phase: 2 of 3 (Public API & Typings)
 Plan: 0 of 2 in current phase
 Status: Ready to plan
-Last activity: 2026-03-13 — Phase 1 execution and verification completed
+Last activity: 2026-03-13 — Phase 2 context gathered
 
 Progress: [███░░░░░░░] 33%
 
@@ -59,6 +59,8 @@ Recent decisions affecting current work:
 - `Phase 1`: Native scan treats positive-value contract calls as valid native transfers
 - `Phase 1`: Self-transfers appear in both `in` and `out`, and `both` mode returns both records
 - `Phase 1`: Native scan implementation remains internal until Phase 2 exposes a public API and typings
+- `Phase 2`: Public native API will be `scanNativeTransfers` with an options shape kept close to ERC20
+- `Phase 2`: Package root will export dedicated native scan types and selected native helpers without altering ERC20 API compatibility
 
 ### Pending Todos
 
@@ -71,5 +73,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-13 11:25
-Stopped at: Phase 1 execution completed and Phase 2 is ready for planning
-Resume file: `.planning/phases/01-native-scan-core/01-VERIFICATION.md`
+Stopped at: Phase 2 context gathered
+Resume file: `.planning/phases/02-public-api-typings/02-CONTEXT.md`
