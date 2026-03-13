@@ -242,3 +242,42 @@ test("scanNativeTransfersWithProvider rejects invalid block ranges", async () =>
     /fromBlock cannot be greater than toBlock/
   );
 });
+
+test("scanNativeTransfersWithProvider uses toBlock when fromBlock is omitted", async () => {
+  const wallet = "0xc00000000000000000000000000000000000000c";
+  const tx = {
+    from: "0xd00000000000000000000000000000000000000d",
+    to: wallet,
+    value: 3n,
+    hash: "0x2222222222222222222222222222222222222222222222222222222222222222",
+    index: 0,
+  };
+
+  const { calls, provider } = createNativeProvider({
+    latestBlock: 999,
+    blocks: {
+      44: {
+        timestamp: 1773059000,
+        transactions: [tx],
+      },
+    },
+    receipts: {
+      [tx.hash]: { status: 1 },
+    },
+  });
+
+  const transfers = await scanNativeTransfersWithProvider({
+    provider,
+    wallet,
+    toBlock: 44,
+    direction: "in",
+  });
+
+  assert.equal(calls.getBlockNumber, 1);
+  assert.deepEqual(
+    calls.getBlock.map((call) => call.blockNumber),
+    [44]
+  );
+  assert.equal(transfers.length, 1);
+  assert.equal(transfers[0].block, 44);
+});
