@@ -40,9 +40,8 @@ function createNativeProvider({ blocks, latestBlock, receipts }) {
   return { calls, provider };
 }
 
-test("scanNativeTransfers returns incoming and outgoing native transfers for top-level value transactions", async () => {
+test("scanNativeTransfers returns incoming native transfers for top-level value transactions", async () => {
   const wallet = "0x1000000000000000000000000000000000000001";
-  const contract = "0x2000000000000000000000000000000000000002";
   const sender = "0x3000000000000000000000000000000000000003";
   const contractSender = "0x4000000000000000000000000000000000000004";
 
@@ -52,13 +51,6 @@ test("scanNativeTransfers returns incoming and outgoing native transfers for top
     value: 7n,
     hash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     index: 0,
-  };
-  const outgoingContractCall = {
-    from: wallet,
-    to: contract,
-    value: 5n,
-    hash: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-    index: 1,
   };
   const incomingFromContract = {
     from: contractSender,
@@ -72,13 +64,12 @@ test("scanNativeTransfers returns incoming and outgoing native transfers for top
     latestBlock: 10,
     blocks: {
       10: {
-        timestamp: 1773055000,
-        transactions: [incomingTx, outgoingContractCall, incomingFromContract],
+        timestamp: 1773055001,
+        transactions: [incomingTx, incomingFromContract],
       },
     },
     receipts: {
       [incomingTx.hash]: { status: 1 },
-      [outgoingContractCall.hash]: { status: 1 },
       [incomingFromContract.hash]: { status: 1 },
     },
   });
@@ -90,6 +81,38 @@ test("scanNativeTransfers returns incoming and outgoing native transfers for top
     fromBlock: 10,
     toBlock: 10,
   });
+
+  assert.equal(calls.getBlockNumber, 0);
+  assert.equal(incoming.length, 2);
+  assert.deepEqual(incoming.map((item) => item.direction), ["in", "in"]);
+  assert.equal(incoming[0].to, ethers.getAddress(wallet));
+  assert.equal(incoming[1].from, ethers.getAddress(contractSender));
+});
+
+test("scanNativeTransfers returns outgoing native transfers for positive-value contract calls", async () => {
+  const wallet = "0x1000000000000000000000000000000000000001";
+  const contract = "0x2000000000000000000000000000000000000002";
+  const outgoingContractCall = {
+    from: wallet,
+    to: contract,
+    value: 5n,
+    hash: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    index: 1,
+  };
+
+  const { calls, provider } = createNativeProvider({
+    latestBlock: 10,
+    blocks: {
+      10: {
+        timestamp: 1773055002,
+        transactions: [outgoingContractCall],
+      },
+    },
+    receipts: {
+      [outgoingContractCall.hash]: { status: 1 },
+    },
+  });
+
   const outgoing = await scanNativeTransfers({
     provider,
     wallet,
@@ -99,14 +122,10 @@ test("scanNativeTransfers returns incoming and outgoing native transfers for top
   });
 
   assert.equal(calls.getBlockNumber, 0);
-  assert.equal(incoming.length, 2);
   assert.equal(outgoing.length, 1);
-  assert.deepEqual(incoming.map((item) => item.direction), ["in", "in"]);
   assert.equal(outgoing[0].direction, "out");
   assert.equal(outgoing[0].to, ethers.getAddress(contract));
   assert.equal(outgoing[0].amount, 5n);
-  assert.equal(incoming[0].to, ethers.getAddress(wallet));
-  assert.equal(incoming[1].from, ethers.getAddress(contractSender));
 });
 
 test("scanNativeTransfers duplicates self-transfers in both mode", async () => {
@@ -191,7 +210,7 @@ test("scanNativeTransfers excludes failed and zero-value transactions", async ()
   assert.deepEqual(calls.getTransactionReceipt, [failedTx.hash]);
 });
 
-test("scanNativeTransfers uses the latest-100-block fallback window", async () => {
+test("scanNativeTransfers default-range scans use the latest-100-block fallback window", async () => {
   const wallet = "0x9000000000000000000000000000000000000009";
   const tx = {
     from: "0xa00000000000000000000000000000000000000a",
@@ -382,4 +401,40 @@ test("scanNativeTransfers accepts the same provider-style options as the ERC20 s
   assert.equal(transfers.length, 1);
   assert.equal(transfers[0].amount, 4n);
   assert.equal(transfers[0].direction, "in");
+});
+
+test("scanNativeTransfers supports injected providers without rpcUrl", async () => {
+  const wallet = "0x1100000000000000000000000000000000000011";
+  const tx = {
+    from: "0x1200000000000000000000000000000000000012",
+    to: wallet,
+    value: 12n,
+    hash: "0x4444444444444444444444444444444444444444444444444444444444444444",
+    index: 0,
+  };
+
+  const { provider } = createNativeProvider({
+    latestBlock: 88,
+    blocks: {
+      88: {
+        timestamp: 1773061000,
+        transactions: [tx],
+      },
+    },
+    receipts: {
+      [tx.hash]: { status: 1 },
+    },
+  });
+
+  const transfers = await scanNativeTransfers({
+    provider,
+    wallet,
+    direction: "in",
+    fromBlock: 88,
+    toBlock: 88,
+  });
+
+  assert.equal(transfers.length, 1);
+  assert.equal(transfers[0].amount, 12n);
+  assert.equal(transfers[0].tx, tx.hash);
 });
