@@ -2,6 +2,31 @@ import { ethers } from "ethers";
 
 const NATIVE_TRANSFER_DIRECTIONS = ["in", "out", "both"];
 
+/**
+ * @typedef {{
+ *   from: string,
+ *   to: string,
+ *   value: bigint | string,
+ *   hash: string,
+ *   index: number
+ * }} NativeTransactionLike
+ */
+
+/**
+ * @typedef {{
+ *   timestamp: number,
+ *   transactions: NativeTransactionLike[]
+ * }} NativeBlockLike
+ */
+
+/**
+ * @typedef {{
+ *   getBlockNumber(): Promise<number>,
+ *   getBlock(blockNumber: number, includeTransactions: boolean): Promise<NativeBlockLike | null>,
+ *   getTransactionReceipt(transactionHash: string): Promise<{ status: number | bigint } | null>
+ * }} NativeScanProvider
+ */
+
 function normalizeAddress(address, fieldName) {
   if (!address) {
     throw new Error(`Missing ${fieldName}`);
@@ -103,10 +128,16 @@ function matchDirections(transaction, wallet) {
 /**
  * Internal provider-driven native transfer scan used by Phase 1 execution.
  *
- * Expected provider shape:
- * - `getBlockNumber(): Promise<number>`
- * - `getBlock(blockNumber: number, includeTransactions: boolean): Promise<{ timestamp: number, transactions: Array<TransactionLike> } | null>`
- * - `getTransactionReceipt(txHash: string): Promise<{ status: number | bigint } | null>`
+ * Returned records intentionally stay close to the public ERC20 transfer shape,
+ * but swap token/log-specific fields for an explicit native `direction`.
+ *
+ * @param {{
+ *   wallet: string,
+ *   direction?: "in" | "out" | "both",
+ *   fromBlock?: number | bigint,
+ *   toBlock?: number | bigint,
+ *   provider: NativeScanProvider
+ * }} options
  */
 export async function scanNativeTransfersWithProvider(options) {
   const wallet = normalizeAddress(options.wallet, "wallet");
