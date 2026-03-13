@@ -1,6 +1,6 @@
-# Scan wallet transaction token ERC20
+# Scan EVM Wallet Transfers
 
-Scan all incoming and outgoing ERC20 token transfers of an EVM wallet
+Scan incoming and outgoing ERC20 transfers or top-level native transfers for an EVM wallet.
 
 Supports:
 - custom `rpcUrl`
@@ -8,7 +8,8 @@ Supports:
 - optional `fromBlock`
 - optional `toBlock`
 - optional `direction` filter: `in`, `out`, `both`
-- optional token contract filter via `tokenAddress`
+- optional token contract filter via `tokenAddress` for ERC20 scans
+- injected providers for ERC20 and native scans
 - JavaScript and TypeScript consumers
 
 ## Install
@@ -18,6 +19,8 @@ yarn add scan-erc20-token
 ```
 
 ## JavaScript
+
+### Scan ERC20 Transfers
 
 ```js
 import { scanErc20Transfers } from "scan-erc20-token";
@@ -35,7 +38,7 @@ const transfers = await scanErc20Transfers({
 console.log(transfers[0]);
 ```
 
-Example response shape:
+ERC20 response shape:
 
 ```js
 {
@@ -51,6 +54,39 @@ Example response shape:
   data: "0x..."
 }
 ```
+
+### Scan Native Transfers
+
+```js
+import { scanNativeTransfers } from "scan-erc20-token";
+
+const transfers = await scanNativeTransfers({
+  rpcUrl: "https://your-evm-rpc.example.com",
+  wallet: "0xYourWalletAddress",
+  direction: "both",
+  fromBlock: 74229500,
+  toBlock: 74229500,
+});
+
+console.log(transfers[0]);
+```
+
+Native response shape:
+
+```js
+{
+  from: "0x...",
+  to: "0x...",
+  amount: 24259569238705576n,
+  tx: "0x...",
+  block: 74229500,
+  blockTimestamp: 1767674408,
+  transactionIndex: 99,
+  direction: "in"
+}
+```
+
+### Proxy Support
 
 Proxy with username/password:
 
@@ -70,7 +106,7 @@ const transfers = await scanErc20Transfers({
 You can also pass proxy credentials directly in the URL:
 
 ```js
-const transfers = await scanErc20Transfers({
+const transfers = await scanNativeTransfers({
   rpcUrl: "https://your-evm-rpc.example.com",
   wallet: "0xYourWalletAddress",
   proxy: "http://my-user:my-pass@proxy.example.com:8080",
@@ -78,6 +114,8 @@ const transfers = await scanErc20Transfers({
 ```
 
 ## TypeScript
+
+### ERC20
 
 ```ts
 import { scanErc20Transfers, type Erc20Transfer } from "scan-erc20-token";
@@ -91,10 +129,33 @@ const transfers: Erc20Transfer[] = await scanErc20Transfers({
 });
 ```
 
+### Native
+
+```ts
+import {
+  scanNativeTransfers,
+  type NativeTransfer,
+} from "scan-erc20-token";
+
+const transfers: NativeTransfer[] = await scanNativeTransfers({
+  rpcUrl: "https://your-evm-rpc.example.com",
+  wallet: "0xYourWalletAddress",
+  direction: "both",
+  fromBlock: 74229500,
+  toBlock: 74229500,
+});
+```
+
 ## Reuse A Provider
 
+`createRpcProvider(...)` works for both ERC20 and native scans.
+
 ```js
-import { createRpcProvider, scanErc20Transfers } from "scan-erc20-token";
+import {
+  createRpcProvider,
+  scanErc20Transfers,
+  scanNativeTransfers,
+} from "scan-erc20-token";
 
 const provider = createRpcProvider({
   rpcUrl: "https://your-evm-rpc.example.com",
@@ -105,22 +166,31 @@ const provider = createRpcProvider({
   },
 });
 
-const transfers = await scanErc20Transfers({
+const erc20Transfers = await scanErc20Transfers({
   provider,
-  rpcUrl: "https://your-evm-rpc.example.com",
   wallet: "0xYourWalletAddress",
   tokenAddress: "0xYourTokenContractAddress",
   direction: "both",
   fromBlock: 100,
   toBlock: 200,
 });
+
+const nativeTransfers = await scanNativeTransfers({
+  provider,
+  wallet: "0xYourWalletAddress",
+  direction: "both",
+  fromBlock: 74229500,
+  toBlock: 74229500,
+});
+
+console.log(erc20Transfers.length, nativeTransfers.length);
 ```
 
 ## API
 
 ```ts
 scanErc20Transfers({
-  rpcUrl: string,
+  rpcUrl?: string,
   wallet: string,
   tokenAddress?: string | null,
   direction?: "in" | "out" | "both",
@@ -129,8 +199,22 @@ scanErc20Transfers({
   fromBlock?: number | bigint,
   toBlock?: number | bigint,
   timeoutMs?: number,
-  provider?: JsonRpcProvider,
+  provider?: ScanProvider,
 }): Promise<Erc20Transfer[]>
+```
+
+```ts
+scanNativeTransfers({
+  rpcUrl?: string,
+  wallet: string,
+  direction?: "in" | "out" | "both",
+  proxy?: string | ProxyConfig | null,
+  proxyUrl?: string | ProxyConfig | null,
+  fromBlock?: number | bigint,
+  toBlock?: number | bigint,
+  timeoutMs?: number,
+  provider?: NativeScanProvider,
+}): Promise<NativeTransfer[]>
 ```
 
 ```ts
@@ -165,15 +249,32 @@ type Erc20Transfer = {
 }
 ```
 
+```ts
+type NativeTransfer = {
+  from: string
+  to: string
+  amount: bigint
+  tx: string
+  block: number
+  blockTimestamp: number
+  transactionIndex: number
+  direction: "in" | "out"
+}
+```
+
 ## Notes
 
-If both `fromBlock` and `toBlock` are omitted, it scans from `latestBlock - 100` to `latestBlock`.
-If only `toBlock` is omitted, the latest block is used.
-If only `fromBlock` is omitted, it scans only `toBlock`.
-If `tokenAddress` is provided, the RPC query filters by that contract address directly.
-If `direction` is omitted, it scans both incoming and outgoing transfers.
-Each returned transfer includes `blockTimestamp`.
-Some RPC providers have strict rate limits. For example, free plans may reject repeated `getBlock` calls with `429 Too Many Requests`.
+- If both `fromBlock` and `toBlock` are omitted, ERC20 and native scans both use `latestBlock - 100` through `latestBlock`.
+- If only `toBlock` is omitted, the latest block is used.
+- If only `fromBlock` is omitted, the scan uses `toBlock`.
+- If `tokenAddress` is provided, the ERC20 RPC query filters by that contract address directly.
+- If `direction` is omitted, both APIs scan both incoming and outgoing transfers.
+- `rpcUrl` is required when you are not injecting a `provider`.
+- Native scans cover top-level native transfers only.
+- Native scans include positive-value contract calls and self-transfers according to the documented `direction` rules.
+- Native scans do not include internal trace transfers or tracing-only value movement.
+- Some `ethers` providers surface full block transactions through `prefetchedTransactions`; the package handles that internally.
+- Some RPC providers have strict rate limits. For example, free plans may reject repeated `getBlock` calls with `429 Too Many Requests`.
 
 ## Tests
 
@@ -183,5 +284,11 @@ Run the standard test suite:
 yarn test
 ```
 
-This runs the Node.js test runner with mocked provider data.
+Run type checking:
+
+```bash
+yarn typecheck
+```
+
+This package verifies native and ERC20 behavior with mocked provider data.
 Tests do not require a real RPC endpoint and do not expose live mainnet URLs or personal transaction hashes.
