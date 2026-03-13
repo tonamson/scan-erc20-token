@@ -1,26 +1,49 @@
-# Scan EVM Wallet Transfers
+<div align="center">
 
-Scan incoming and outgoing ERC20 transfers or top-level native transfers for an EVM wallet.
+# scan-erc20-token
 
-Supports:
-- custom `rpcUrl`
-- optional proxy
-- optional `fromBlock`
-- optional `toBlock`
-- optional `direction` filter: `in`, `out`, `both`
-- optional token contract filter via `tokenAddress` for ERC20 scans
-- injected providers for ERC20 and native scans
-- JavaScript and TypeScript consumers
+Scan wallet-level EVM transfer activity with a minimal, typed API.
 
-## Install
+[![npm version](https://img.shields.io/npm/v/scan-erc20-token)](https://www.npmjs.com/package/scan-erc20-token)
+[![license](https://img.shields.io/github/license/tonamson/scan-erc20-token)](./LICENSE)
+[![typescript](https://img.shields.io/badge/TypeScript-ready-3178C6?logo=typescript&logoColor=white)](./src/index.d.ts)
+[![ethers](https://img.shields.io/badge/ethers-v6-3c3c3d)](https://github.com/ethers-io/ethers.js/)
+
+</div>
+
+`scan-erc20-token` helps you inspect wallet activity on any EVM-compatible chain without building custom log filters or block walkers yourself.
+
+It supports two scan modes:
+
+- ERC20 `Transfer(address,address,uint256)` event scanning
+- Top-level native coin transfer scanning
+
+## Capabilities
+
+| Capability | ERC20 | Native |
+| --- | --- | --- |
+| Incoming / outgoing / both | Yes | Yes |
+| Block range filters | Yes | Yes |
+| Custom RPC URL | Yes | Yes |
+| Proxy support | Yes | Yes |
+| Injected provider | Yes | Yes |
+| Token contract filter | Yes | No |
+| Returns `bigint` amounts | Yes | Yes |
+
+## Installation
 
 ```bash
 yarn add scan-erc20-token
 ```
 
-## JavaScript
+## Requirements
 
-### Scan ERC20 Transfers
+- Node.js with ESM support
+- An EVM-compatible JSON-RPC endpoint
+
+## Quick Start
+
+### ERC20 transfer scan
 
 ```js
 import { scanErc20Transfers } from "scan-erc20-token";
@@ -30,7 +53,6 @@ const transfers = await scanErc20Transfers({
   wallet: "0xYourWalletAddress",
   tokenAddress: "0xYourTokenContractAddress",
   direction: "both",
-  proxy: "http://127.0.0.1:7890",
   fromBlock: 100,
   toBlock: 200,
 });
@@ -38,7 +60,7 @@ const transfers = await scanErc20Transfers({
 console.log(transfers[0]);
 ```
 
-ERC20 response shape:
+Example record:
 
 ```js
 {
@@ -55,7 +77,7 @@ ERC20 response shape:
 }
 ```
 
-### Scan Native Transfers
+### Native transfer scan
 
 ```js
 import { scanNativeTransfers } from "scan-erc20-token";
@@ -71,7 +93,7 @@ const transfers = await scanNativeTransfers({
 console.log(transfers[0]);
 ```
 
-Native response shape:
+Example record:
 
 ```js
 {
@@ -86,9 +108,19 @@ Native response shape:
 }
 ```
 
-### Proxy Support
+## Proxy Support
 
-Proxy with username/password:
+Pass a full proxy URL:
+
+```js
+const transfers = await scanNativeTransfers({
+  rpcUrl: "https://your-evm-rpc.example.com",
+  wallet: "0xYourWalletAddress",
+  proxy: "http://user:pass@proxy.example.com:8080",
+});
+```
+
+Or pass a structured config:
 
 ```js
 const transfers = await scanErc20Transfers({
@@ -103,52 +135,11 @@ const transfers = await scanErc20Transfers({
 });
 ```
 
-You can also pass proxy credentials directly in the URL:
+`proxy` and `proxyUrl` are interchangeable aliases.
 
-```js
-const transfers = await scanNativeTransfers({
-  rpcUrl: "https://your-evm-rpc.example.com",
-  wallet: "0xYourWalletAddress",
-  proxy: "http://my-user:my-pass@proxy.example.com:8080",
-});
-```
+## Reuse a Provider
 
-## TypeScript
-
-### ERC20
-
-```ts
-import { scanErc20Transfers, type Erc20Transfer } from "scan-erc20-token";
-
-const transfers: Erc20Transfer[] = await scanErc20Transfers({
-  rpcUrl: "https://your-evm-rpc.example.com",
-  wallet: "0xYourWalletAddress",
-  direction: "in",
-  fromBlock: 100,
-  toBlock: 200,
-});
-```
-
-### Native
-
-```ts
-import {
-  scanNativeTransfers,
-  type NativeTransfer,
-} from "scan-erc20-token";
-
-const transfers: NativeTransfer[] = await scanNativeTransfers({
-  rpcUrl: "https://your-evm-rpc.example.com",
-  wallet: "0xYourWalletAddress",
-  direction: "both",
-  fromBlock: 74229500,
-  toBlock: 74229500,
-});
-```
-
-## Reuse A Provider
-
-`createRpcProvider(...)` works for both ERC20 and native scans.
+Use one shared provider across multiple scans:
 
 ```js
 import {
@@ -159,11 +150,7 @@ import {
 
 const provider = createRpcProvider({
   rpcUrl: "https://your-evm-rpc.example.com",
-  proxy: {
-    url: "http://proxy.example.com:8080",
-    username: "my-user",
-    password: "my-pass",
-  },
+  timeoutMs: 10_000,
 });
 
 const erc20Transfers = await scanErc20Transfers({
@@ -186,36 +173,71 @@ const nativeTransfers = await scanNativeTransfers({
 console.log(erc20Transfers.length, nativeTransfers.length);
 ```
 
-## API
+## TypeScript
 
 ```ts
-scanErc20Transfers({
-  rpcUrl?: string,
-  wallet: string,
-  tokenAddress?: string | null,
-  direction?: "in" | "out" | "both",
-  proxy?: string | ProxyConfig | null,
-  proxyUrl?: string | ProxyConfig | null,
-  fromBlock?: number | bigint,
-  toBlock?: number | bigint,
-  timeoutMs?: number,
-  provider?: ScanProvider,
-}): Promise<Erc20Transfer[]>
+import {
+  scanErc20Transfers,
+  scanNativeTransfers,
+  type Erc20Transfer,
+  type NativeTransfer,
+} from "scan-erc20-token";
+
+const erc20Transfers: Erc20Transfer[] = await scanErc20Transfers({
+  rpcUrl: "https://your-evm-rpc.example.com",
+  wallet: "0xYourWalletAddress",
+  direction: "in",
+});
+
+const nativeTransfers: NativeTransfer[] = await scanNativeTransfers({
+  rpcUrl: "https://your-evm-rpc.example.com",
+  wallet: "0xYourWalletAddress",
+  direction: "both",
+});
 ```
 
-```ts
-scanNativeTransfers({
-  rpcUrl?: string,
-  wallet: string,
-  direction?: "in" | "out" | "both",
-  proxy?: string | ProxyConfig | null,
-  proxyUrl?: string | ProxyConfig | null,
-  fromBlock?: number | bigint,
-  toBlock?: number | bigint,
-  timeoutMs?: number,
-  provider?: NativeScanProvider,
-}): Promise<NativeTransfer[]>
-```
+## API At A Glance
+
+### `scanErc20Transfers(options)`
+
+Scans ERC20 `Transfer` logs where the target wallet appears as sender, receiver, or both.
+
+| Option | Type | Notes |
+| --- | --- | --- |
+| `wallet` | `string` | Required wallet address |
+| `rpcUrl` | `string` | Optional when `provider` is supplied |
+| `tokenAddress` | `string \| null` | Optional ERC20 contract filter |
+| `direction` | `"in" \| "out" \| "both"` | Defaults to `"both"` |
+| `fromBlock` | `number \| bigint` | Optional start block |
+| `toBlock` | `number \| bigint` | Optional end block |
+| `proxy` | `string \| ProxyConfig \| null` | Optional proxy config |
+| `proxyUrl` | `string \| ProxyConfig \| null` | Alias of `proxy` |
+| `timeoutMs` | `number` | Optional HTTP timeout |
+| `provider` | `ScanProvider` | Optional custom provider |
+
+Returns `Promise<Erc20Transfer[]>`.
+
+### `scanNativeTransfers(options)`
+
+Scans successful top-level native transfers for the target wallet.
+
+| Option | Type | Notes |
+| --- | --- | --- |
+| `wallet` | `string` | Required wallet address |
+| `rpcUrl` | `string` | Optional when `provider` is supplied |
+| `direction` | `"in" \| "out" \| "both"` | Defaults to `"both"` |
+| `fromBlock` | `number \| bigint` | Optional start block |
+| `toBlock` | `number \| bigint` | Optional end block |
+| `proxy` | `string \| ProxyConfig \| null` | Optional proxy config |
+| `proxyUrl` | `string \| ProxyConfig \| null` | Alias of `proxy` |
+| `timeoutMs` | `number` | Optional HTTP timeout |
+| `provider` | `NativeScanProvider` | Optional custom provider |
+
+Returns `Promise<NativeTransfer[]>`.
+
+### `createRpcProvider(options)`
+
+Creates an `ethers` `JsonRpcProvider` with optional timeout and proxy support.
 
 ```ts
 createRpcProvider({
@@ -223,78 +245,36 @@ createRpcProvider({
   proxy?: string | ProxyConfig | null,
   proxyUrl?: string | ProxyConfig | null,
   timeoutMs?: number,
-}): JsonRpcProvider
+})
 ```
+
+### `ProxyConfig`
 
 ```ts
 type ProxyConfig = {
-  url: string
-  username?: string
-  password?: string
-}
+  url: string;
+  username?: string;
+  password?: string;
+};
 ```
 
-```ts
-type Erc20Transfer = {
-  token: string
-  from: string
-  to: string
-  amount: bigint
-  tx: string
-  block: number
-  blockTimestamp: number
-  logIndex: number
-  transactionIndex: number
-  data: string
-}
-```
+## Operational Notes
 
-```ts
-type NativeTransfer = {
-  from: string
-  to: string
-  amount: bigint
-  tx: string
-  block: number
-  blockTimestamp: number
-  transactionIndex: number
-  direction: "in" | "out"
-}
-```
+- If both `fromBlock` and `toBlock` are omitted, the scan defaults to the latest 100 blocks.
+- If only `toBlock` is provided, `fromBlock` defaults to `toBlock`.
+- If only `fromBlock` is provided, `toBlock` defaults to the latest block.
+- Native scanning covers top-level transactions with non-zero native value only.
+- Internal trace-based transfers are not included in native scans.
+- Returned addresses are checksum-normalized.
+- Returned amounts are raw `bigint` values and are not decimal-formatted.
 
-## Notes
-
-- If both `fromBlock` and `toBlock` are omitted, ERC20 and native scans both use `latestBlock - 100` through `latestBlock`.
-- If only `toBlock` is omitted, the latest block is used.
-- If only `fromBlock` is omitted, the scan uses `toBlock`.
-- If `tokenAddress` is provided, the ERC20 RPC query filters by that contract address directly.
-- If `direction` is omitted, both APIs scan both incoming and outgoing transfers.
-- `rpcUrl` is required when you are not injecting a `provider`.
-- Native scans cover top-level native transfers only.
-- Native scans include positive-value contract calls and self-transfers according to the documented `direction` rules.
-- Native scans do not include internal trace transfers or tracing-only value movement.
-- Some `ethers` providers surface full block transactions through `prefetchedTransactions`; the package handles that internally.
-- Some RPC providers have strict rate limits. For example, free plans may reject repeated `getBlock` calls with `429 Too Many Requests`.
-
-## Scope Boundaries
-
-- Native support in this milestone is limited to top-level native transfers returned by standard RPC block and receipt methods.
-- Internal trace transfers are out of scope for `v1.0.5` and are not included in `scanNativeTransfers(...)`.
-- If you need tracing-only value movement, plan that as a later feature instead of assuming it is covered by the current API.
-
-## Tests
-
-Run the standard test suite:
+## Development
 
 ```bash
 yarn test
-```
-
-Run type checking:
-
-```bash
 yarn typecheck
 ```
 
-This package verifies native and ERC20 behavior with mocked provider data.
-Tests do not require a real RPC endpoint and do not expose live mainnet URLs or personal transaction hashes.
+## License
+
+MIT
