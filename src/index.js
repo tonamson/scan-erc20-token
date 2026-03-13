@@ -99,6 +99,7 @@ function resolveProxyUrl(options) {
  *
  * @param {object} options Provider options.
  * @param {string} options.rpcUrl EVM JSON-RPC endpoint URL.
+ * Required when `provider` is not supplied.
  * @param {string | {url: string, username?: string, password?: string} | null} [options.proxy]
  * Optional proxy configuration or proxy URL string.
  * @param {string | {url: string, username?: string, password?: string} | null} [options.proxyUrl]
@@ -140,6 +141,7 @@ export function createRpcProvider(options) {
  *
  * @param {object} options Scan options.
  * @param {string} options.rpcUrl EVM JSON-RPC endpoint URL.
+ * Required when `provider` is not supplied.
  * @param {string} options.wallet Wallet address to scan.
  * @param {"in" | "out" | "both"} [options.direction] Scan incoming, outgoing, or both.
  * @param {number | bigint} [options.fromBlock] Optional start block.
@@ -156,6 +158,13 @@ export function createRpcProvider(options) {
  *   getBlock(blockNumber: number, includeTransactions: boolean): Promise<{
  *     timestamp: number,
  *     transactions: Array<{
+ *       from: string,
+ *       to: string,
+ *       value: bigint | string,
+ *       hash: string,
+ *       index: number
+ *     } | string>,
+ *     prefetchedTransactions?: Array<{
  *       from: string,
  *       to: string,
  *       value: bigint | string,

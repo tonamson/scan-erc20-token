@@ -83,7 +83,31 @@ export interface RpcProviderOptions {
   timeoutMs?: number;
 }
 
-export interface ScanErc20TransfersOptions extends RpcProviderOptions {
+export interface RpcProviderOverrideOptions {
+  /**
+   * EVM JSON-RPC endpoint URL.
+   *
+   * Optional when a custom `provider` is supplied.
+   */
+  rpcUrl?: string;
+
+  /**
+   * Optional proxy configuration.
+   */
+  proxy?: string | ProxyConfig | null;
+
+  /**
+   * Alias of `proxy`.
+   */
+  proxyUrl?: string | ProxyConfig | null;
+
+  /**
+   * Optional HTTP timeout in milliseconds.
+   */
+  timeoutMs?: number;
+}
+
+export interface ScanErc20TransfersBaseOptions {
   /**
    * Wallet address to scan.
    */
@@ -128,6 +152,16 @@ export interface ScanErc20TransfersOptions extends RpcProviderOptions {
    */
   provider?: ScanProvider;
 }
+
+export type ScanErc20TransfersOptions =
+  | (ScanErc20TransfersBaseOptions &
+      RpcProviderOptions & {
+        provider?: ScanProvider;
+      })
+  | (ScanErc20TransfersBaseOptions &
+      RpcProviderOverrideOptions & {
+        provider: ScanProvider;
+      });
 
 export interface Erc20Transfer {
   /**
@@ -232,9 +266,15 @@ export interface NativeBlockLike {
   timestamp: number;
 
   /**
-   * Full transactions for this block.
+   * Transactions for this block. On some `ethers` providers this may contain
+   * hashes while `prefetchedTransactions` holds the expanded objects.
    */
-  transactions: NativeTransactionLike[];
+  transactions: Array<NativeTransactionLike | string>;
+
+  /**
+   * Prefetched full transactions when provided by the RPC/block implementation.
+   */
+  prefetchedTransactions?: NativeTransactionLike[];
 }
 
 export interface NativeTransactionReceiptLike {
@@ -266,7 +306,7 @@ export interface NativeScanProvider {
   ): Promise<NativeTransactionReceiptLike | null>;
 }
 
-export interface ScanNativeTransfersOptions extends RpcProviderOptions {
+export interface ScanNativeTransfersBaseOptions {
   /**
    * Wallet address to scan.
    */
@@ -304,6 +344,16 @@ export interface ScanNativeTransfersOptions extends RpcProviderOptions {
    */
   provider?: NativeScanProvider;
 }
+
+export type ScanNativeTransfersOptions =
+  | (ScanNativeTransfersBaseOptions &
+      RpcProviderOptions & {
+        provider?: NativeScanProvider;
+      })
+  | (ScanNativeTransfersBaseOptions &
+      RpcProviderOverrideOptions & {
+        provider: NativeScanProvider;
+      });
 
 export interface NativeTransfer {
   /**

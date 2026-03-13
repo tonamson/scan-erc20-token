@@ -3,6 +3,8 @@ import {
   createRpcProvider,
   scanErc20Transfers,
   scanNativeTransfers,
+  type NativeBlockLike,
+  type NativeScanProvider,
   type Erc20Transfer,
   type NativeTransfer,
   type NativeTransferDirection,
@@ -47,5 +49,42 @@ const nativeOptions: ScanNativeTransfersOptions = {
 const runNative = async (): Promise<NativeTransfer[]> =>
   scanNativeTransfers(nativeOptions);
 
+const prefetchedBlock: NativeBlockLike = {
+  timestamp: 1767674408,
+  transactions: [
+    "0x6362655ba6d70bb1045694f114a51a3c2873b71a8ffd023877d722124a22d816",
+  ],
+  prefetchedTransactions: [
+    {
+      from: "0x45061A4cB95b0C744802C306e312029CA0D821E7",
+      to: "0xFfbF500e9637fa82F10b3C7d62dc9B9934254888",
+      value: "24259569238705576",
+      hash: "0x6362655ba6d70bb1045694f114a51a3c2873b71a8ffd023877d722124a22d816",
+      index: 99,
+    },
+  ],
+};
+
+const nativeMockProvider: NativeScanProvider = {
+  async getBlockNumber() {
+    return 74229500;
+  },
+  async getBlock() {
+    return prefetchedBlock;
+  },
+  async getTransactionReceipt() {
+    return { status: 1 };
+  },
+};
+
+const runNativeWithInjectedProvider = async (): Promise<NativeTransfer[]> =>
+  scanNativeTransfers({
+    wallet: "0xFfbF500e9637fa82F10b3C7d62dc9B9934254888",
+    provider: nativeMockProvider,
+    fromBlock: 74229500,
+    toBlock: 74229500,
+  });
+
 void run();
 void runNative();
+void runNativeWithInjectedProvider();

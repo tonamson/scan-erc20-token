@@ -18,7 +18,8 @@ export const NATIVE_TRANSFER_DIRECTIONS = ["in", "out", "both"];
 /**
  * @typedef {{
  *   timestamp: number,
- *   transactions: NativeTransactionLike[]
+ *   transactions: Array<NativeTransactionLike | string>,
+ *   prefetchedTransactions?: NativeTransactionLike[]
  * }} NativeBlockLike
  */
 
@@ -90,7 +91,27 @@ function normalizeBlock(block, blockNumber) {
     throw new Error(`Block ${blockNumber} is missing transactions`);
   }
 
-  return block;
+  const transactions = Array.isArray(block.prefetchedTransactions)
+    ? block.prefetchedTransactions
+    : block.transactions;
+
+  if (!Array.isArray(transactions)) {
+    throw new Error(`Block ${blockNumber} is missing prefetched transactions`);
+  }
+
+  if (
+    transactions.some(
+      (transaction) =>
+        transaction != null && (typeof transaction !== "object" || typeof transaction.hash !== "string")
+    )
+  ) {
+    throw new Error(`Block ${blockNumber} is missing prefetched transaction objects`);
+  }
+
+  return {
+    timestamp: block.timestamp,
+    transactions,
+  };
 }
 
 function mapNativeTransfer({ blockTimestamp, direction, transaction }) {

@@ -286,6 +286,53 @@ test("scanNativeTransfers uses toBlock when fromBlock is omitted", async () => {
   assert.equal(transfers[0].block, 44);
 });
 
+test("scanNativeTransfers reads prefetched transaction objects from ethers blocks", async () => {
+  const wallet = "0xFfbF500e9637fa82F10b3C7d62dc9B9934254888";
+  const txHash =
+    "0x6362655ba6d70bb1045694f114a51a3c2873b71a8ffd023877d722124a22d816";
+  const prefetchedTx = {
+    from: "0x45061A4cB95b0C744802C306e312029CA0D821E7",
+    to: wallet,
+    value: "24259569238705576",
+    hash: txHash,
+    index: 99,
+  };
+
+  const { provider } = createNativeProvider({
+    latestBlock: 74229500,
+    blocks: {
+      74229500: {
+        timestamp: 1767674408,
+        transactions: [txHash],
+        prefetchedTransactions: [prefetchedTx],
+      },
+    },
+    receipts: {
+      [txHash]: { status: 1 },
+    },
+  });
+
+  const transfers = await scanNativeTransfers({
+    provider,
+    wallet,
+    fromBlock: 74229500,
+    toBlock: 74229500,
+    direction: "in",
+  });
+
+  assert.equal(transfers.length, 1);
+  assert.deepEqual(transfers[0], {
+    from: ethers.getAddress(prefetchedTx.from),
+    to: ethers.getAddress(wallet),
+    amount: 24259569238705576n,
+    tx: txHash,
+    block: 74229500,
+    blockTimestamp: 1767674408,
+    transactionIndex: 99,
+    direction: "in",
+  });
+});
+
 test("package root exports native helpers without changing the ERC20 API", async () => {
   assert.deepEqual(NATIVE_TRANSFER_DIRECTIONS, ["in", "out", "both"]);
   assert.equal(typeof scanNativeTransfers, "function");
