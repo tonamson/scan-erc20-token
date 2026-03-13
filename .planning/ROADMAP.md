@@ -61,8 +61,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: Update README examples and API notes for native-token scanning
-- [ ] 03-02: Finalize the native-transfer test matrix and release-readiness checks
+- [ ] 03-01-PLAN.md — Update README examples and API notes for native-token scanning
+- [ ] 03-02-PLAN.md — Finalize the native-transfer test matrix and release-readiness checks
 
 ## Progress
 
