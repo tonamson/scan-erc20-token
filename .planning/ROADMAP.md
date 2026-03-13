@@ -33,8 +33,8 @@ This milestone adds native-token transfer scanning to an existing ERC20-focused 
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Implement native transfer scan helpers and the block/transaction filtering algorithm
-- [ ] 01-02: Add focused mocked tests for incoming, outgoing, and default-range native scans
+- [ ] 01-01-PLAN.md — Build internal native transfer scan core
+- [ ] 01-02-PLAN.md — Add mocked native transfer behavior coverage
 
 ### Phase 2: Public API & Typings
 **Goal**: Publish native-transfer support through a clear API that preserves the current ERC20 contract.
