@@ -276,6 +276,12 @@ type NativeTransfer = {
 - Some `ethers` providers surface full block transactions through `prefetchedTransactions`; the package handles that internally.
 - Some RPC providers have strict rate limits. For example, free plans may reject repeated `getBlock` calls with `429 Too Many Requests`.
 
+## Scope Boundaries
+
+- Native support in this milestone is limited to top-level native transfers returned by standard RPC block and receipt methods.
+- Internal trace transfers are out of scope for `v1.0.5` and are not included in `scanNativeTransfers(...)`.
+- If you need tracing-only value movement, plan that as a later feature instead of assuming it is covered by the current API.
+
 ## Tests
 
 Run the standard test suite:
