@@ -1,7 +1,7 @@
 {
   "author": "To Nam Son",
   "name": "scan-wallet-evm",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Wallet scanner for native token and ERC20 transfers on EVM networks.",
   "type": "module",
   "main": "./src/index.js",
