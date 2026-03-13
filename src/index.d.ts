@@ -23,8 +23,23 @@ export declare const ERC20_TRANSFER_DIRECTIONS: readonly [
   "both",
 ];
 
+/**
+ * Supported scan directions for native transfer queries.
+ */
+export declare const NATIVE_TRANSFER_DIRECTIONS: readonly [
+  "in",
+  "out",
+  "both",
+];
+
 export type Erc20TransferDirection =
   (typeof ERC20_TRANSFER_DIRECTIONS)[number];
+export type NativeTransferDirection =
+  (typeof NATIVE_TRANSFER_DIRECTIONS)[number];
+export type NativeTransferRecordDirection = Exclude<
+  NativeTransferDirection,
+  "both"
+>;
 
 export interface ProxyConfig {
   /**
@@ -183,6 +198,155 @@ export interface ScanProvider {
   getLogs(filter: PerformActionFilter): Promise<Array<Log>>;
 }
 
+export interface NativeTransactionLike {
+  /**
+   * Sender address of the top-level transaction.
+   */
+  from: string;
+
+  /**
+   * Receiver address of the top-level transaction.
+   */
+  to: string | null;
+
+  /**
+   * Native token value sent in the transaction.
+   */
+  value: bigint | string;
+
+  /**
+   * Transaction hash.
+   */
+  hash: string;
+
+  /**
+   * Transaction index inside the block.
+   */
+  index: number;
+}
+
+export interface NativeBlockLike {
+  /**
+   * Unix timestamp of the block.
+   */
+  timestamp: number;
+
+  /**
+   * Full transactions for this block.
+   */
+  transactions: NativeTransactionLike[];
+}
+
+export interface NativeTransactionReceiptLike {
+  /**
+   * Transaction status from the receipt.
+   */
+  status: number | bigint | null;
+}
+
+export interface NativeScanProvider {
+  /**
+   * Returns the latest block number.
+   */
+  getBlockNumber(): Promise<number>;
+
+  /**
+   * Returns a full block including transactions.
+   */
+  getBlock(
+    blockNumber: number,
+    includeTransactions: boolean
+  ): Promise<NativeBlockLike | null>;
+
+  /**
+   * Returns the receipt for a given transaction hash.
+   */
+  getTransactionReceipt(
+    transactionHash: string
+  ): Promise<NativeTransactionReceiptLike | null>;
+}
+
+export interface ScanNativeTransfersOptions extends RpcProviderOptions {
+  /**
+   * Wallet address to scan.
+   */
+  wallet: string;
+
+  /**
+   * Optional start block.
+   *
+   * If both `fromBlock` and `toBlock` are omitted,
+   * the scan starts at `latestBlock - 100`.
+   *
+   * If only `fromBlock` is omitted, the scan uses `toBlock`.
+   */
+  fromBlock?: number | bigint;
+
+  /**
+   * Optional end block.
+   *
+   * If both `fromBlock` and `toBlock` are omitted,
+   * the scan ends at the latest block number.
+   *
+   * If only `toBlock` is omitted, the latest block number is used.
+   */
+  toBlock?: number | bigint;
+
+  /**
+   * Defaults to `both`.
+   */
+  direction?: NativeTransferDirection;
+
+  /**
+   * Optional custom provider.
+   *
+   * If omitted, `createRpcProvider(options)` is used internally.
+   */
+  provider?: NativeScanProvider;
+}
+
+export interface NativeTransfer {
+  /**
+   * Sender address of the top-level transaction.
+   */
+  from: string;
+
+  /**
+   * Receiver address of the top-level transaction.
+   */
+  to: string;
+
+  /**
+   * Raw native amount as a `bigint`.
+   */
+  amount: bigint;
+
+  /**
+   * Transaction hash.
+   */
+  tx: string;
+
+  /**
+   * Block number containing the transaction.
+   */
+  block: number;
+
+  /**
+   * Unix timestamp of the block.
+   */
+  blockTimestamp: number;
+
+  /**
+   * Transaction index inside the block.
+   */
+  transactionIndex: number;
+
+  /**
+   * Matched transfer direction for this wallet.
+   */
+  direction: NativeTransferRecordDirection;
+}
+
 /**
  * Creates an `ethers` JSON-RPC provider with optional proxy and timeout support.
  *
@@ -216,3 +380,24 @@ export declare function createRpcProvider(
 export declare function scanErc20Transfers(
   options: ScanErc20TransfersOptions
 ): Promise<Erc20Transfer[]>;
+
+/**
+ * Scans top-level native transfers for the given wallet.
+ *
+ * If `direction` is omitted, both incoming and outgoing transfers are returned.
+ *
+ * @param options.rpcUrl EVM JSON-RPC endpoint URL.
+ * @param options.wallet Wallet address to scan.
+ * @param options.direction Scan incoming, outgoing, or both directions.
+ * @param options.proxy Optional proxy configuration or proxy URL string.
+ * @param options.proxyUrl Alias of `options.proxy`.
+ * @param options.fromBlock Optional start block. Defaults to `latestBlock - 100`
+ * when both `fromBlock` and `toBlock` are omitted.
+ * @param options.toBlock Optional end block. Defaults to `latestBlock`
+ * when both `fromBlock` and `toBlock` are omitted.
+ * @param options.timeoutMs Optional HTTP timeout in milliseconds.
+ * @param options.provider Optional custom provider implementation.
+ */
+export declare function scanNativeTransfers(
+  options: ScanNativeTransfersOptions
+): Promise<NativeTransfer[]>;
