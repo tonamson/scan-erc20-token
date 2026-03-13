@@ -7,9 +7,9 @@
 
 ### Native Transfer Scanning
 
-- [ ] **NATIVE-01**: Developer can scan incoming native-token transfers to a wallet within an explicit EVM block range
-- [ ] **NATIVE-02**: Developer can scan outgoing native-token transfers from a wallet within an explicit EVM block range
-- [ ] **NATIVE-03**: Developer can omit `fromBlock` and `toBlock` for native-token scans and get the same default window behavior as ERC20 scans
+- [x] **NATIVE-01**: Developer can scan incoming native-token transfers to a wallet within an explicit EVM block range
+- [x] **NATIVE-02**: Developer can scan outgoing native-token transfers from a wallet within an explicit EVM block range
+- [x] **NATIVE-03**: Developer can omit `fromBlock` and `toBlock` for native-token scans and get the same default window behavior as ERC20 scans
 - [ ] **NATIVE-04**: Developer can reuse the current `rpcUrl`, proxy, timeout, and injected-provider options when scanning native-token transfers
 
 ### API & Types
@@ -41,9 +41,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NATIVE-01 | Phase 1 | Pending |
-| NATIVE-02 | Phase 1 | Pending |
-| NATIVE-03 | Phase 1 | Pending |
+| NATIVE-01 | Phase 1 | Complete |
+| NATIVE-02 | Phase 1 | Complete |
+| NATIVE-03 | Phase 1 | Complete |
 | NATIVE-04 | Phase 2 | Pending |
 | API-01 | Phase 2 | Pending |
 | API-02 | Phase 2 | Pending |
@@ -57,4 +57,4 @@
 
 ---
 *Requirements defined: 2026-03-13*
-*Last updated: 2026-03-13 after milestone v1.0.5 definition*
+*Last updated: 2026-03-13 after Phase 1 verification*
