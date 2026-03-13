@@ -438,3 +438,39 @@ test("scanNativeTransfers supports injected providers without rpcUrl", async () 
   assert.equal(transfers[0].amount, 12n);
   assert.equal(transfers[0].tx, tx.hash);
 });
+
+test("release-readiness native smoke checks stay offline with injected providers", async () => {
+  const wallet = "0x1300000000000000000000000000000000000013";
+  const tx = {
+    from: "0x1400000000000000000000000000000000000014",
+    to: wallet,
+    value: 2n,
+    hash: "0x5555555555555555555555555555555555555555555555555555555555555555",
+    index: 1,
+  };
+
+  const { calls, provider } = createNativeProvider({
+    latestBlock: 90,
+    blocks: {
+      90: {
+        timestamp: 1773061100,
+        transactions: [tx],
+      },
+    },
+    receipts: {
+      [tx.hash]: { status: 1 },
+    },
+  });
+
+  const transfers = await scanNativeTransfers({
+    provider,
+    wallet,
+    direction: "in",
+    fromBlock: 90,
+    toBlock: 90,
+  });
+
+  assert.equal(calls.getBlockNumber, 0);
+  assert.equal(transfers.length, 1);
+  assert.equal(transfers[0].block, 90);
+});
